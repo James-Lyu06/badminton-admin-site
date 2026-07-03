@@ -105,11 +105,32 @@ function renderResponses() {
       const value = BadmintonData.formatAnswer(sub.answers[question.id]);
       return `<tr><th>${BadmintonData.escapeHtml(question.label)}</th><td>${BadmintonData.escapeHtml(value)}</td></tr>`;
     }).join("");
-    return `<details class="submissionCard">
+    return `<details class="submissionCard" data-submission-id="${BadmintonData.escapeHtml(sub.id)}">
       <summary><span>${new Date(sub.createdAt).toLocaleString()}</span></summary>
+      <div class="submissionActions">
+        <span class="muted small">Response ID: ${BadmintonData.escapeHtml(sub.id)}</span>
+        <button class="dangerButton" type="button" data-delete-id="${BadmintonData.escapeHtml(sub.id)}">Delete response</button>
+      </div>
       <table>${rows}</table>
     </details>`;
   }).join("");
+}
+
+async function deleteResponse(id) {
+  const confirmed = window.confirm("Delete this response permanently? This action cannot be undone.");
+  if (!confirmed) return;
+  try {
+    await BadmintonData.deleteSubmission(id);
+    submissions = submissions.filter(sub => sub.id !== id);
+    renderStats();
+    renderFilterValues();
+    renderResponses();
+    renderSummary();
+    showToast("Response deleted.");
+  } catch (error) {
+    console.error(error);
+    showToast("Delete failed. Check Supabase delete policy.");
+  }
 }
 
 function renderSummary() {
@@ -160,22 +181,22 @@ function answerQuestion(questionText) {
   const items = filteredSubmissions();
   if (!text) return "Ask a question about the current filtered responses.";
   if (!items.length) return "No matching submissions are available under the current filters.";
-  if (text.includes("concern") || text.includes("worry") || text.includes("risk") || text.includes("顾虑")) {
+  if (text.includes("concern") || text.includes("worry") || text.includes("risk")) {
     const concerns = countValues(items.flatMap(sub => Array.isArray(sub.answers.concerns) ? sub.answers.concerns : []));
     return `Top concern: ${topValue(concerns) || "not enough concern data"}.`;
   }
-  if (text.includes("level") || text.includes("水平")) {
+  if (text.includes("level")) {
     return `Tester level distribution: ${formatCounts(countValues(items.map(sub => sub.answers.level)))}.`;
   }
-  if (text.includes("comment") || text.includes("subjective") || text.includes("open") || text.includes("主观")) {
+  if (text.includes("comment") || text.includes("subjective") || text.includes("open")) {
     const comments = items.map(sub => sub.answers.comments).filter(Boolean);
     return comments.length ? `There are ${comments.length} open comments. Representative comment: ${comments[0]}` : "No open comments were submitted.";
   }
-  if (text.includes("helpful") || text.includes("rating") || text.includes("评分")) {
+  if (text.includes("helpful") || text.includes("rating")) {
     const helpfulness = items.map(sub => Number(sub.answers.helpfulness)).filter(Number.isFinite);
     return helpfulness.length ? `Average helpfulness is ${(helpfulness.reduce((sum, value) => sum + value, 0) / helpfulness.length).toFixed(1)} from ${helpfulness.length} responses.` : "No helpfulness ratings are available.";
   }
-  if (text.includes("contact") || text.includes("联系")) {
+  if (text.includes("contact")) {
     const contacts = items.filter(sub => {
       const contact = sub.answers.contact;
       return contact && (contact.name || contact.contact);
@@ -220,6 +241,10 @@ document.querySelector("#filterValue").addEventListener("change", () => { render
 document.querySelector("#refreshSummaryBtn").addEventListener("click", renderSummary);
 document.querySelector("#askAiBtn").addEventListener("click", () => {
   document.querySelector("#aiAnswer").textContent = answerQuestion(document.querySelector("#aiQuestion").value);
+});
+responsesView.addEventListener("click", event => {
+  const button = event.target.closest("[data-delete-id]");
+  if (button) deleteResponse(button.dataset.deleteId);
 });
 
 renderAuth();
