@@ -36,45 +36,25 @@ const BadmintonData = (() => {
   }
 
   async function listSubmissions() {
-    if (!isSupabaseConfigured()) {
-      return localItems().filter(item => item.questionnaireVersion !== "questionnaire_config");
-    }
-    const response = await fetch(endpoint("?select=*&questionnaire_version=neq.questionnaire_config&order=created_at.desc"), { headers: headers() });
+    if (!isSupabaseConfigured()) return localItems();
+    const response = await fetch(endpoint("?select=*&order=created_at.desc"), { headers: headers() });
     if (!response.ok) throw new Error(await response.text());
     return (await response.json()).map(normalizeRow);
   }
 
-  async function loadQuestionnaireConfig(fallbackSchema) {
+  async function deleteSubmission(id) {
+    if (!id) throw new Error("Missing submission id.");
     if (!isSupabaseConfigured()) {
-      try { return JSON.parse(localStorage.getItem("badminton_questionnaire_schema")) || fallbackSchema; }
-      catch { return fallbackSchema; }
+      const remaining = localItems().filter(item => item.id !== id);
+      localStorage.setItem(localKey, JSON.stringify(remaining, null, 2));
+      return true;
     }
-    const query = "?select=answers,created_at&questionnaire_version=eq.questionnaire_config&order=created_at.desc&limit=1";
-    const response = await fetch(endpoint(query), { headers: headers() });
-    if (!response.ok) throw new Error(await response.text());
-    const rows = await response.json();
-    return rows[0]?.answers?.schema || fallbackSchema;
-  }
-
-  async function saveQuestionnaireConfig(schema) {
-    const payload = {
-      id: `questionnaire_config_${Date.now()}`,
-      created_at: new Date().toISOString(),
-      questionnaire_version: "questionnaire_config",
-      language: "en",
-      answers: { schema }
-    };
-    if (!isSupabaseConfigured()) {
-      localStorage.setItem("badminton_questionnaire_schema", JSON.stringify(schema, null, 2));
-      return payload;
-    }
-    const response = await fetch(endpoint(), {
-      method: "POST",
-      headers: headers({ Prefer: "return=representation" }),
-      body: JSON.stringify(payload)
+    const response = await fetch(endpoint(`?id=eq.${encodeURIComponent(id)}`), {
+      method: "DELETE",
+      headers: headers({ Prefer: "return=minimal" })
     });
     if (!response.ok) throw new Error(await response.text());
-    return (await response.json())[0];
+    return true;
   }
 
   function formatAnswer(value) {
@@ -92,5 +72,5 @@ const BadmintonData = (() => {
       .replaceAll("'", "&#039;");
   }
 
-  return { escapeHtml, formatAnswer, isSupabaseConfigured, listSubmissions, loadQuestionnaireConfig, saveQuestionnaireConfig };
+  return { deleteSubmission, escapeHtml, formatAnswer, isSupabaseConfigured, listSubmissions };
 })();
