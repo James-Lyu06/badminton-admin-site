@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Badminton Research Dashboard</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <section id="loginView" class="loginView">
+    <div class="panel loginPanel">
+      <p class="eyebrow">Internal research site</p>
+      <h1>Research dashboard</h1>
+      <p class="muted">Enter the admin password if one is configured.</p>
+      <input id="adminPassword" type="password" placeholder="Password" />
+      <button id="loginBtn" type="button">Enter dashboard</button>
+      <p id="loginMessage" class="muted small"></p>
+    </div>
+  </section>
+
+  <section id="dashboardView" class="hidden">
+    <header class="siteHeader">
+      <div>
+        <p class="eyebrow">Internal research site</p>
+        <h1>Research dashboard</h1>
+      </div>
+      <div class="headerActions">
+        <button id="refreshDataBtn" type="button">Refresh data</button>
+      </div>
+    </header>
+
+    <main class="page dashboard">
+      <section class="statsGrid" aria-label="Dashboard summary">
+        <article class="statTile"><b id="submissionTotal">0</b><span>Submissions</span></article>
+        <article class="statTile"><b id="contactTotal">0</b><span>Contacts left</span></article>
+        <article class="statTile"><b id="avgHelpfulness">-</b><span>Avg helpfulness</span></article>
+        <article class="statTile"><b id="latestSubmission">-</b><span>Latest response</span></article>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <div>
+            <p class="eyebrow">Online review</p>
+            <h2>Collected answers</h2>
+          </div>
+          <div class="toolbar">
+            <input id="searchResponses" type="search" placeholder="Search responses..." />
+            <select id="filterField" aria-label="Filter field"><option value="">All fields</option></select>
+            <select id="filterValue" aria-label="Filter value"><option value="">Any value</option></select>
+          </div>
+        </div>
+        <div id="responsesView" class="responsesView"></div>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <div>
+            <p class="eyebrow">Summary</p>
+            <h2>AI data assistant</h2>
+          </div>
+          <button id="refreshSummaryBtn" type="button">Refresh summary</button>
+        </div>
+        <div id="summaryView" class="summaryView"></div>
+        <div class="aiAskBox">
+          <label for="aiQuestion">Ask about the collected data</label>
+          <div class="aiAskRow">
+            <input id="aiQuestion" type="text" placeholder="Example: What are the biggest concerns?" />
+            <button id="askAiBtn" type="button">Ask</button>
+          </div>
+          <div id="aiAnswer" class="aiAnswer"></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js"></script>
+  <script src="schema.js"></script>
+  <script src="data-service.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>
