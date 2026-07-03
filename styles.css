@@ -17,8 +17,9 @@ h3 { font-size: 17px; }
 .small { font-size: 14px; }
 .panel { background: #fff; border: 1px solid #dfe7f3; border-radius: 8px; box-shadow: 0 10px 28px rgba(18, 32, 51, 0.04); margin-bottom: 22px; padding: 24px; }
 button { background: #2451f5; border: 0; border-radius: 8px; color: #fff; cursor: pointer; display: inline-flex; font: inherit; font-size: 14px; font-weight: 800; justify-content: center; padding: 11px 15px; }
-input, select, textarea { background: #fff; border: 1px solid #d4deec; border-radius: 8px; color: #122033; font: inherit; padding: 11px 12px; width: 100%; }
-.schemaEditor { font-family: "Cascadia Mono", "SFMono-Regular", Consolas, monospace; font-size: 13px; min-height: 340px; resize: vertical; }
+.dangerButton { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 9px 12px; }
+.dangerButton:hover { background: #ffe4e6; }
+input, select { background: #fff; border: 1px solid #d4deec; border-radius: 8px; color: #122033; font: inherit; padding: 11px 12px; width: 100%; }
 .headerActions, .toolbar { align-items: center; display: flex; flex-wrap: wrap; gap: 10px; }
 .toolbar input { min-width: 240px; }
 .toolbar select { min-width: 180px; }
@@ -30,6 +31,7 @@ input, select, textarea { background: #fff; border: 1px solid #d4deec; border-ra
 .responsesView { display: grid; gap: 14px; overflow: auto; }
 .submissionCard { background: #fbfcff; border: 1px solid #e5ebf5; border-radius: 8px; padding: 16px; }
 .submissionCard summary { align-items: center; cursor: pointer; display: flex; gap: 12px; justify-content: space-between; list-style-position: inside; }
+.submissionActions { align-items: center; border-top: 1px solid #e7edf6; display: flex; gap: 12px; justify-content: space-between; margin-top: 14px; padding-top: 14px; }
 .submissionCard table { margin-top: 14px; }
 table { border-collapse: collapse; min-width: 760px; width: 100%; }
 th, td { border-bottom: 1px solid #e7edf6; font-size: 14px; padding: 11px; text-align: left; vertical-align: top; }
@@ -48,7 +50,7 @@ th { background: #f7f9fd; color: #52657f; width: 34%; }
 .loginPanel { margin: 0 auto; max-width: 420px; width: 100%; }
 .loginPanel input { margin: 16px 0 10px; }
 @media (max-width: 900px) {
-  .siteHeader, .sectionHeader { align-items: stretch; flex-direction: column; }
+  .siteHeader, .sectionHeader, .submissionActions { align-items: stretch; flex-direction: column; }
   .statsGrid, .summaryGrid, .aiAskRow { grid-template-columns: 1fr; }
   .page { padding: 16px; }
   .siteHeader { padding: 20px 16px; }
