@@ -3,32 +3,81 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AuraSense Feedback Sites</title>
-  <link rel="stylesheet" href="shared/styles.css" />
+  <title>Badminton Research Dashboard</title>
+  <link rel="stylesheet" href="styles.css?v=delete-20260703" />
 </head>
-<body class="gateway">
-  <main class="gatewayLayout">
-    <p class="eyebrow">AuraSense Badminton Study</p>
-    <h1>AuraSense Feedback Sites</h1>
-    <p class="muted">The prototype is now split into two independent website entries.</p>
-    <div class="gatewayActions">
-      <a class="button" href="client/index.html">Client questionnaire</a>
-      <a class="button secondary" href="admin/index.html">Research dashboard</a>
+<body>
+  <section id="loginView" class="loginView">
+    <div class="panel loginPanel">
+      <p class="eyebrow">Internal research site</p>
+      <h1>Research dashboard</h1>
+      <p class="muted">Enter the admin password if one is configured.</p>
+      <input id="adminPassword" type="password" placeholder="Password" />
+      <button id="loginBtn" type="button">Enter dashboard</button>
+      <p id="loginMessage" class="muted small"></p>
     </div>
-    <section class="panel qrPanel">
+  </section>
+
+  <section id="dashboardView" class="hidden">
+    <header class="siteHeader">
       <div>
-        <p class="eyebrow">Client access</p>
-        <h2>Questionnaire QR code</h2>
-        <p class="muted small">Use this after the site is hosted. The QR code points directly to the client questionnaire page.</p>
-        <input id="clientUrlInput" class="urlInput" readonly />
+        <p class="eyebrow">Internal research site</p>
+        <h1>Research dashboard</h1>
       </div>
-      <img id="clientQr" class="qrImage" alt="Client questionnaire QR code" />
-    </section>
-  </main>
-  <script>
-    const clientUrl = new URL("client/index.html", window.location.href).href;
-    document.querySelector("#clientUrlInput").value = clientUrl;
-    document.querySelector("#clientQr").src = `https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(clientUrl)}`;
-  </script>
+      <div class="headerActions">
+        <button id="refreshDataBtn" type="button">Refresh data</button>
+      </div>
+    </header>
+
+    <main class="page dashboard">
+      <section class="statsGrid" aria-label="Dashboard summary">
+        <article class="statTile"><b id="submissionTotal">0</b><span>Submissions</span></article>
+        <article class="statTile"><b id="contactTotal">0</b><span>Contacts left</span></article>
+        <article class="statTile"><b id="avgHelpfulness">-</b><span>Avg helpfulness</span></article>
+        <article class="statTile"><b id="latestSubmission">-</b><span>Latest response</span></article>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <div>
+            <p class="eyebrow">Online review</p>
+            <h2>Collected answers</h2>
+          </div>
+          <div class="toolbar">
+            <input id="searchResponses" type="search" placeholder="Search responses..." />
+            <select id="filterField" aria-label="Filter field"><option value="">All fields</option></select>
+            <select id="filterValue" aria-label="Filter value"><option value="">Any value</option></select>
+          </div>
+        </div>
+        <div id="responsesView" class="responsesView"></div>
+      </section>
+
+      <section class="panel">
+        <div class="sectionHeader">
+          <div>
+            <p class="eyebrow">Summary</p>
+            <h2>AI data assistant</h2>
+          </div>
+          <button id="refreshSummaryBtn" type="button">Refresh summary</button>
+        </div>
+        <div id="summaryView" class="summaryView"></div>
+        <div class="aiAskBox">
+          <label for="aiQuestion">Ask about the collected data</label>
+          <div class="aiAskRow">
+            <input id="aiQuestion" type="text" placeholder="Example: What are the biggest concerns?" />
+            <button id="askAiBtn" type="button">Ask</button>
+          </div>
+          <div id="aiAnswer" class="aiAnswer"></div>
+        </div>
+      </section>
+    </main>
+  </section>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script src="config.js?v=delete-20260703"></script>
+  <script src="schema.js?v=delete-20260703"></script>
+  <script src="data-service.js?v=delete-20260703"></script>
+  <script src="admin.js?v=delete-20260703"></script>
 </body>
 </html>
