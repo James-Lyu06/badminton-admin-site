@@ -1,17 +1,33 @@
-# Badminton Admin Site
+# AuraSense Feedback Sites
 
-Internal dashboard for reviewing badminton questionnaire submissions.
+This prototype has been rebuilt as two independent website entries:
 
-## Deploy
+- `client/index.html` is the client/tester questionnaire site.
+- `admin/index.html` is the internal research dashboard.
 
-1. Upload these files to the repository root.
-2. Enable GitHub Pages from `main` / root.
-3. Open the deployed site to review online submissions from Supabase.
+The client site no longer shows the sample motion report, score, session summary, or report explanation. It only shows questions and answer controls.
 
-## Database
+The research dashboard supports:
 
-This site reads from the same Supabase project as the client questionnaire.
+- Online response review without exporting first
+- Search and level filtering
+- Summary stats
+- Open-text answer review
+- A local AI-style summary draft for subjective answers
+- Questionnaire editing
+- Questions with fixed options plus an "Other" free-text answer
 
-## Admin Password
+## Free Netlify production URLs
 
-Set `ADMIN_PASSWORD` in `config.js` for a lightweight front-end gate. This is not real security; use private hosting or real authentication for production.
+For the current free Netlify deployment, use these two paths:
+
+```text
+https://aurasense-feedback.netlify.app/client/
+https://aurasense-feedback.netlify.app/admin/
+```
+
+Keeping both entries under the same Netlify domain is important while this prototype still shares data through browser localStorage.
+
+## Important limitation
+
+This demo still uses browser `localStorage`. It works for a local prototype because both sites share the same origin. If the client and admin sites are deployed as separate domains, they will need a shared backend such as Supabase, Firebase, or a custom API.
