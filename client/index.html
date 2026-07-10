@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>AuraSense Feedback Questionnaire</title>
+  <link rel="stylesheet" href="../shared/styles.css" />
+</head>
+<body>
+  <header class="siteHeader compact clientHeader">
+    <div>
+      <p class="eyebrow" id="clientEyebrow">AuraSense test feedback</p>
+      <h1 id="clientHeading">Questionnaire</h1>
+    </div>
+    <button id="languageToggle" class="secondary languageToggle" type="button" aria-label="Switch language">中文</button>
+  </header>
+
+  <main class="page">
+    <section class="panel introPanel">
+      <div>
+        <h2 id="formTitle">Loading questionnaire...</h2>
+        <p class="muted" id="introText">Please answer the following questions based on your testing experience. Required questions are marked with an asterisk.</p>
+      </div>
+      <span class="pill" id="questionCount"></span>
+    </section>
+
+    <section class="panel">
+      <form id="clientForm" class="form"></form>
+    </section>
+  </main>
+
+  <div id="successModal" class="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="successTitle">
+    <div class="modal">
+      <h2 id="successTitle">Thank you</h2>
+      <p id="successText">Your questionnaire has been submitted successfully.</p>
+      <button id="closeSuccessModal" type="button">Close</button>
+    </div>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <script src="../shared/data.js"></script>
+  <script src="client.js"></script>
+</body>
+</html>
