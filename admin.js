@@ -38,6 +38,7 @@ async function loadDashboard() {
 
 function renderStats() {
   document.querySelector("#submissionTotal").textContent = submissions.length;
+  document.querySelector("#exportDataBtn").disabled = submissions.length === 0;
   document.querySelector("#contactTotal").textContent = submissions.filter(sub => {
     const contact = sub.answers.contact;
     return contact && (contact.name || contact.contact);
@@ -50,6 +51,65 @@ function renderStats() {
   document.querySelector("#latestSubmission").textContent = submissions.length
     ? new Date(submissions[0].createdAt).toLocaleDateString()
     : "-";
+}
+
+function exportAnswer(value) {
+  if (Array.isArray(value)) return value.map(String).join("; ");
+  if (value && typeof value === "object") {
+    return Object.entries(value)
+      .filter(([, item]) => item !== null && item !== undefined && item !== "")
+      .map(([key, item]) => `${key.replaceAll("_", " ")}: ${Array.isArray(item) ? item.join("; ") : item}`)
+      .join(" | ");
+  }
+  return value ?? "";
+}
+
+function csvCell(value) {
+  let text = String(value ?? "");
+  if (/^\s*[=+\-@]/.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function exportTimestamp(value) {
+  if (!value) return "";
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+}
+
+function buildExportCsv(items) {
+  const headers = [
+    "Response ID",
+    "Submitted at",
+    "Questionnaire version",
+    "Language",
+    ...schema.questions.map(question => question.label)
+  ];
+  const rows = items.map(submission => [
+    submission.id,
+    exportTimestamp(submission.createdAt),
+    submission.questionnaireVersion,
+    submission.language,
+    ...schema.questions.map(question => exportAnswer(submission.answers[question.id]))
+  ]);
+  return `\uFEFF${[headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n")}`;
+}
+
+function exportSubmissions() {
+  if (!submissions.length) {
+    showToast("No submissions are available to export.");
+    return;
+  }
+  const csv = buildExportCsv(submissions);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = `badminton-submissions-${new Date().toISOString().slice(0, 10)}.csv`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+  showToast(`Exported ${submissions.length} responses for Excel.`);
 }
 
 function renderFilterFields() {
@@ -242,6 +302,7 @@ document.querySelector("#loginBtn").addEventListener("click", () => {
   }
 });
 document.querySelector("#refreshDataBtn").addEventListener("click", loadDashboard);
+document.querySelector("#exportDataBtn").addEventListener("click", exportSubmissions);
 document.querySelector("#searchResponses").addEventListener("input", () => { renderResponses(); renderSummary(); });
 document.querySelector("#filterField").addEventListener("change", () => { renderFilterValues(); renderResponses(); renderSummary(); });
 document.querySelector("#filterValue").addEventListener("change", () => { renderResponses(); renderSummary(); });
