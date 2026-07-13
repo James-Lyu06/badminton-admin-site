@@ -42,9 +42,10 @@ function renderStats() {
     const contact = sub.answers.contact;
     return contact && (contact.name || contact.contact);
   }).length;
-  const helpfulness = submissions.map(sub => Number(sub.answers.helpfulness)).filter(Number.isFinite);
-  document.querySelector("#avgHelpfulness").textContent = helpfulness.length
-    ? (helpfulness.reduce((sum, value) => sum + value, 0) / helpfulness.length).toFixed(1)
+  const followUpAnswers = submissions.map(sub => sub.answers.follow_up_willingness).filter(Boolean);
+  const futureTestInterest = followUpAnswers.filter(answer => ["Yes", "Maybe"].includes(answer)).length;
+  document.querySelector("#followUpInterest").textContent = followUpAnswers.length
+    ? `${Math.round((futureTestInterest / followUpAnswers.length) * 100)}%`
     : "-";
   document.querySelector("#latestSubmission").textContent = submissions.length
     ? new Date(submissions[0].createdAt).toLocaleDateString()
@@ -138,7 +139,7 @@ function renderSummary() {
   summaryView.innerHTML = `
     <div class="summaryGrid">
       <article><h3>Key patterns</h3><ul>${summary.patterns.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
-      <article><h3>Open-text signals</h3><ul>${summary.openText.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
+      <article><h3>Satisfaction & follow-up</h3><ul>${summary.followUp.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
       <article><h3>Suggested next actions</h3><ul>${summary.actions.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
     </div>
     <p class="muted small">This assistant is currently local and rule-based. It can later be replaced by a real AI API.</p>`;
@@ -148,30 +149,34 @@ function buildAiStyleSummary(items) {
   if (!items.length) {
     return {
       patterns: ["No filtered submissions are available yet."],
-      openText: ["Open-text themes will appear after testers submit answers."],
+      followUp: ["Satisfaction and follow-up signals will appear after participants submit answers."],
       actions: ["Collect a few test responses before interpreting results."]
     };
   }
   const levelCounts = countValues(items.map(sub => sub.answers.level));
-  const concerns = countValues(items.flatMap(sub => Array.isArray(sub.answers.concerns) ? sub.answers.concerns : []));
-  const useful = countValues(items.flatMap(sub => Array.isArray(sub.answers.most_useful) ? sub.answers.most_useful : []));
-  const comments = items.map(sub => sub.answers.comments).filter(Boolean);
-  const willingness = countValues(items.map(sub => sub.answers.willingness));
+  const painPoints = countValues(items.flatMap(sub => answerValues(sub.answers.pain_points)));
+  const trainingMethods = countValues(items.flatMap(sub => answerValues(sub.answers.training_methods)));
+  const satisfaction = countValues(items.map(sub => sub.answers.current_satisfaction));
+  const willingness = countValues(items.map(sub => sub.answers.follow_up_willingness));
+  const contacts = items.filter(sub => {
+    const contact = sub.answers.contact;
+    return contact && (contact.name || contact.contact);
+  }).length;
   return {
     patterns: [
       `Most common tester level: ${topValue(levelCounts) || "not enough data"}.`,
-      `Most selected useful feature: ${topValue(useful) || "not enough data"}.`,
-      `Most common reuse willingness: ${topValue(willingness) || "not enough data"}.`
+      `Most common training pain point: ${topValue(painPoints) || "not enough data"}.`,
+      `Most used training method: ${topValue(trainingMethods) || "not enough data"}.`
     ],
-    openText: [
-      comments.length ? `${comments.length} open comments were collected.` : "No open comments have been submitted yet.",
-      `Most common concern: ${topValue(concerns) || "not enough data"}.`,
-      comments[0] ? `Representative comment: ${comments[0]}` : "Representative comments will appear after collection."
+    followUp: [
+      `Most common current satisfaction: ${topValue(satisfaction) || "not enough data"}.`,
+      `Most common future test willingness: ${topValue(willingness) || "not enough data"}.`,
+      `${contacts} of ${items.length} matching submissions left contact information.`
     ],
     actions: [
-      "Review concerns around accuracy and explain what the system can and cannot measure.",
-      "Keep the client questionnaire short while validating product value.",
-      "Use open-text answers to improve future coaching suggestions."
+      "Prioritize the most common training difficulty in future product tests.",
+      "Adapt future training guidance to the methods participants already use.",
+      "Follow up only with participants who selected Yes or Maybe and left contact information."
     ]
   };
 }
@@ -181,20 +186,22 @@ function answerQuestion(questionText) {
   const items = filteredSubmissions();
   if (!text) return "Ask a question about the current filtered responses.";
   if (!items.length) return "No matching submissions are available under the current filters.";
-  if (text.includes("concern") || text.includes("worry") || text.includes("risk")) {
-    const concerns = countValues(items.flatMap(sub => Array.isArray(sub.answers.concerns) ? sub.answers.concerns : []));
-    return `Top concern: ${topValue(concerns) || "not enough concern data"}.`;
+  if (text.includes("pain") || text.includes("difficult") || text.includes("problem")) {
+    const painPoints = countValues(items.flatMap(sub => answerValues(sub.answers.pain_points)));
+    return `Top training pain point: ${topValue(painPoints) || "not enough data"}.`;
   }
   if (text.includes("level")) {
     return `Tester level distribution: ${formatCounts(countValues(items.map(sub => sub.answers.level)))}.`;
   }
-  if (text.includes("comment") || text.includes("subjective") || text.includes("open")) {
-    const comments = items.map(sub => sub.answers.comments).filter(Boolean);
-    return comments.length ? `There are ${comments.length} open comments. Representative comment: ${comments[0]}` : "No open comments were submitted.";
+  if (text.includes("method") || text.includes("tool") || text.includes("train")) {
+    const methods = countValues(items.flatMap(sub => answerValues(sub.answers.training_methods)));
+    return `Training method distribution: ${formatCounts(methods)}.`;
   }
-  if (text.includes("helpful") || text.includes("rating")) {
-    const helpfulness = items.map(sub => Number(sub.answers.helpfulness)).filter(Number.isFinite);
-    return helpfulness.length ? `Average helpfulness is ${(helpfulness.reduce((sum, value) => sum + value, 0) / helpfulness.length).toFixed(1)} from ${helpfulness.length} responses.` : "No helpfulness ratings are available.";
+  if (text.includes("satisf") || text.includes("rating")) {
+    return `Current satisfaction distribution: ${formatCounts(countValues(items.map(sub => sub.answers.current_satisfaction)))}.`;
+  }
+  if (text.includes("willing") || text.includes("future") || text.includes("test")) {
+    return `Future test willingness: ${formatCounts(countValues(items.map(sub => sub.answers.follow_up_willingness)))}.`;
   }
   if (text.includes("contact")) {
     const contacts = items.filter(sub => {
@@ -204,7 +211,7 @@ function answerQuestion(questionText) {
     return `${contacts.length} of ${items.length} matching submissions left contact information.`;
   }
   const summary = buildAiStyleSummary(items);
-  return [...summary.patterns, ...summary.openText, ...summary.actions].join(" ");
+  return [...summary.patterns, ...summary.followUp, ...summary.actions].join(" ");
 }
 
 function countValues(values) {
@@ -249,3 +256,4 @@ responsesView.addEventListener("click", event => {
 
 renderAuth();
 if (authReady()) loadDashboard();
+
