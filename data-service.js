@@ -35,11 +35,17 @@ const BadmintonData = (() => {
     catch { return []; }
   }
 
+  function isCurrentQuestionnaire(row) {
+    const rowVersion = row.questionnaire_version || row.questionnaireVersion;
+    const currentVersion = window.BADMINTON_SCHEMA?.version;
+    return rowVersion !== "questionnaire_config" && (!currentVersion || rowVersion === currentVersion);
+  }
+
   async function listSubmissions() {
-    if (!isSupabaseConfigured()) return localItems();
+    if (!isSupabaseConfigured()) return localItems().filter(isCurrentQuestionnaire);
     const response = await fetch(endpoint("?select=*&order=created_at.desc"), { headers: headers() });
     if (!response.ok) throw new Error(await response.text());
-    return (await response.json()).map(normalizeRow);
+    return (await response.json()).filter(isCurrentQuestionnaire).map(normalizeRow);
   }
 
   async function deleteSubmission(id) {
@@ -74,3 +80,4 @@ const BadmintonData = (() => {
 
   return { deleteSubmission, escapeHtml, formatAnswer, isSupabaseConfigured, listSubmissions };
 })();
+
