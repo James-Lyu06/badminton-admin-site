@@ -17,6 +17,7 @@ h3 { font-size: 17px; }
 .small { font-size: 14px; }
 .panel { background: #fff; border: 1px solid #dfe7f3; border-radius: 8px; box-shadow: 0 10px 28px rgba(18, 32, 51, 0.04); margin-bottom: 22px; padding: 24px; }
 button { background: #2451f5; border: 0; border-radius: 8px; color: #fff; cursor: pointer; display: inline-flex; font: inherit; font-size: 14px; font-weight: 800; justify-content: center; padding: 11px 15px; }
+button:disabled { cursor: wait; opacity: 0.65; }
 .dangerButton { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; padding: 9px 12px; }
 .dangerButton:hover { background: #ffe4e6; }
 input, select { background: #fff; border: 1px solid #d4deec; border-radius: 8px; color: #122033; font: inherit; padding: 11px 12px; width: 100%; }
@@ -38,6 +39,7 @@ th, td { border-bottom: 1px solid #e7edf6; font-size: 14px; padding: 11px; text-
 th { background: #f7f9fd; color: #52657f; width: 34%; }
 .summaryGrid { display: grid; gap: 14px; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .summaryGrid article, .aiAnswer { background: #f7f9fd; border: 1px solid #e5ebf5; border-radius: 8px; padding: 16px; }
+.aiAnswer { white-space: pre-wrap; }
 .summaryGrid ul { margin: 0; padding-left: 20px; }
 .summaryGrid li { margin: 8px 0; }
 .aiAskBox { border-top: 1px solid #e7edf6; margin-top: 18px; padding-top: 18px; }

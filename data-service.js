@@ -11,6 +11,10 @@ const BadmintonData = (() => {
     return `${config.SUPABASE_URL.replace(/\/$/, "")}/rest/v1/${table}${query}`;
   }
 
+  function functionEndpoint(name) {
+    return `${config.SUPABASE_URL.replace(/\/$/, "")}/functions/v1/${encodeURIComponent(name)}`;
+  }
+
   function headers(extra = {}) {
     return {
       apikey: config.SUPABASE_ANON_KEY,
@@ -63,6 +67,50 @@ const BadmintonData = (() => {
     return true;
   }
 
+  function hasContact(value) {
+    return Boolean(value && typeof value === "object" && Object.values(value).some(Boolean));
+  }
+
+  function redactPrivateFields(value) {
+    if (Array.isArray(value)) return value.map(redactPrivateFields);
+    if (!value || typeof value !== "object") return value;
+    return Object.fromEntries(Object.entries(value)
+      .filter(([key]) => !/(contact|name|email|phone|wechat|whatsapp|instagram)/i.test(key))
+      .map(([key, item]) => [key, redactPrivateFields(item)]));
+  }
+
+  function anonymizeSubmission(submission) {
+    return {
+      createdAt: submission.createdAt,
+      language: submission.language,
+      contactProvided: hasContact(submission.answers?.contact),
+      answers: redactPrivateFields(submission.answers || {})
+    };
+  }
+
+  async function askAi(question, submissions, questions) {
+    if (!isSupabaseConfigured()) throw new Error("Supabase is not configured.");
+    const functionName = config.AI_FUNCTION_NAME || "ai-assistant";
+    let response;
+    try {
+      response = await fetch(functionEndpoint(functionName), {
+        method: "POST",
+        headers: headers(),
+        body: JSON.stringify({
+          question,
+          questions: questions.map(item => ({ id: item.id, label: item.label })),
+          submissions: submissions.slice(0, 100).map(anonymizeSubmission)
+        })
+      });
+    } catch {
+      throw new Error("The AI service is not deployed or reachable.");
+    }
+    const payload = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(payload.error || `AI request failed (${response.status}).`);
+    if (!payload.answer) throw new Error("The AI service returned an empty answer.");
+    return payload.answer;
+  }
+
   function formatAnswer(value) {
     if (Array.isArray(value)) return value.join("; ");
     if (value && typeof value === "object") return Object.values(value).filter(Boolean).join(" / ");
@@ -78,6 +126,6 @@ const BadmintonData = (() => {
       .replaceAll("'", "&#039;");
   }
 
-  return { deleteSubmission, escapeHtml, formatAnswer, isSupabaseConfigured, listSubmissions };
+  return { askAi, deleteSubmission, escapeHtml, formatAnswer, isSupabaseConfigured, listSubmissions };
 })();
 
