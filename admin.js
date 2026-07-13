@@ -142,7 +142,7 @@ function renderSummary() {
       <article><h3>Satisfaction & follow-up</h3><ul>${summary.followUp.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
       <article><h3>Suggested next actions</h3><ul>${summary.actions.map(item => `<li>${BadmintonData.escapeHtml(item)}</li>`).join("")}</ul></article>
     </div>
-    <p class="muted small">This assistant is currently local and rule-based. It can later be replaced by a real AI API.</p>`;
+    <p class="muted small">The cards above are calculated locally. Questions are answered by OpenAI through a server-side Supabase Edge Function.</p>`;
 }
 
 function buildAiStyleSummary(items) {
@@ -181,37 +181,12 @@ function buildAiStyleSummary(items) {
   };
 }
 
-function answerQuestion(questionText) {
-  const text = questionText.trim().toLowerCase();
+async function answerQuestion(questionText) {
+  const text = questionText.trim();
   const items = filteredSubmissions();
   if (!text) return "Ask a question about the current filtered responses.";
   if (!items.length) return "No matching submissions are available under the current filters.";
-  if (text.includes("pain") || text.includes("difficult") || text.includes("problem")) {
-    const painPoints = countValues(items.flatMap(sub => answerValues(sub.answers.pain_points)));
-    return `Top training pain point: ${topValue(painPoints) || "not enough data"}.`;
-  }
-  if (text.includes("level")) {
-    return `Tester level distribution: ${formatCounts(countValues(items.map(sub => sub.answers.level)))}.`;
-  }
-  if (text.includes("method") || text.includes("tool") || text.includes("train")) {
-    const methods = countValues(items.flatMap(sub => answerValues(sub.answers.training_methods)));
-    return `Training method distribution: ${formatCounts(methods)}.`;
-  }
-  if (text.includes("satisf") || text.includes("rating")) {
-    return `Current satisfaction distribution: ${formatCounts(countValues(items.map(sub => sub.answers.current_satisfaction)))}.`;
-  }
-  if (text.includes("willing") || text.includes("future") || text.includes("test")) {
-    return `Future test willingness: ${formatCounts(countValues(items.map(sub => sub.answers.follow_up_willingness)))}.`;
-  }
-  if (text.includes("contact")) {
-    const contacts = items.filter(sub => {
-      const contact = sub.answers.contact;
-      return contact && (contact.name || contact.contact);
-    });
-    return `${contacts.length} of ${items.length} matching submissions left contact information.`;
-  }
-  const summary = buildAiStyleSummary(items);
-  return [...summary.patterns, ...summary.followUp, ...summary.actions].join(" ");
+  return BadmintonData.askAi(text, items, schema.questions);
 }
 
 function countValues(values) {
@@ -224,11 +199,6 @@ function countValues(values) {
 function topValue(counts) {
   const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   return entries[0] ? `${entries[0][0]} (${entries[0][1]})` : "";
-}
-
-function formatCounts(counts) {
-  const entries = Object.entries(counts).sort((a, b) => b[1] - a[1]);
-  return entries.length ? entries.map(([label, count]) => `${label}: ${count}`).join("; ") : "not enough data";
 }
 
 document.querySelector("#loginBtn").addEventListener("click", () => {
@@ -246,8 +216,26 @@ document.querySelector("#searchResponses").addEventListener("input", () => { ren
 document.querySelector("#filterField").addEventListener("change", () => { renderFilterValues(); renderResponses(); renderSummary(); });
 document.querySelector("#filterValue").addEventListener("change", () => { renderResponses(); renderSummary(); });
 document.querySelector("#refreshSummaryBtn").addEventListener("click", renderSummary);
-document.querySelector("#askAiBtn").addEventListener("click", () => {
-  document.querySelector("#aiAnswer").textContent = answerQuestion(document.querySelector("#aiQuestion").value);
+async function askAi() {
+  const button = document.querySelector("#askAiBtn");
+  const answer = document.querySelector("#aiAnswer");
+  if (button.disabled) return;
+  button.disabled = true;
+  button.textContent = "Thinking...";
+  answer.textContent = "Analyzing the current filtered responses...";
+  try {
+    answer.textContent = await answerQuestion(document.querySelector("#aiQuestion").value);
+  } catch (error) {
+    console.error(error);
+    answer.textContent = `AI unavailable: ${error.message}`;
+  } finally {
+    button.disabled = false;
+    button.textContent = "Ask";
+  }
+}
+document.querySelector("#askAiBtn").addEventListener("click", askAi);
+document.querySelector("#aiQuestion").addEventListener("keydown", event => {
+  if (event.key === "Enter" && !event.isComposing) askAi();
 });
 responsesView.addEventListener("click", event => {
   const button = event.target.closest("[data-delete-id]");
