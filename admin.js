@@ -5,6 +5,25 @@ const summaryView = document.querySelector("#summaryView");
 const toast = document.querySelector("#toast");
 let submissions = [];
 
+function questionsForSubmission(submission) {
+  const snapshot = submission.answers?._questionnaire?.questions;
+  return Array.isArray(snapshot) && snapshot.length ? snapshot : schema.questions;
+}
+
+function allKnownQuestions() {
+  const byId = new Map();
+  // Submissions are newest first, so the filter uses the latest known label.
+  submissions.forEach(submission => {
+    questionsForSubmission(submission).forEach(question => {
+      if (!byId.has(question.id)) byId.set(question.id, question);
+    });
+  });
+  schema.questions.forEach(question => {
+    if (!byId.has(question.id)) byId.set(question.id, question);
+  });
+  return [...byId.values()];
+}
+
 function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
@@ -77,19 +96,14 @@ function exportTimestamp(value) {
 }
 
 function buildExportCsv(items) {
-  const headers = [
-    "Response ID",
-    "Submitted at",
-    "Questionnaire version",
-    "Language",
-    ...schema.questions.map(question => question.label)
-  ];
+  const questions = allKnownQuestions();
+  const headers = ["Response ID", "Submitted at", "Questionnaire version", "Language", ...questions.map(question => question.label)];
   const rows = items.map(submission => [
     submission.id,
     exportTimestamp(submission.createdAt),
     submission.questionnaireVersion,
     submission.language,
-    ...schema.questions.map(question => exportAnswer(submission.answers[question.id]))
+    ...questions.map(question => exportAnswer(submission.answers[question.id]))
   ]);
   return `\uFEFF${[headers, ...rows].map(row => row.map(csvCell).join(",")).join("\r\n")}`;
 }
@@ -115,10 +129,11 @@ function exportSubmissions() {
 function renderFilterFields() {
   const field = document.querySelector("#filterField");
   const current = field.value;
-  field.innerHTML = `<option value="">All fields</option>${schema.questions.map(question => (
+  const knownQuestions = allKnownQuestions();
+  field.innerHTML = `<option value="">All fields</option>${knownQuestions.map(question => (
     `<option value="${BadmintonData.escapeHtml(question.id)}">${BadmintonData.escapeHtml(question.label)}</option>`
   )).join("")}`;
-  field.value = schema.questions.some(question => question.id === current) ? current : "";
+  field.value = knownQuestions.some(question => question.id === current) ? current : "";
   renderFilterValues();
 }
 
@@ -162,7 +177,7 @@ function renderResponses() {
     return;
   }
   responsesView.innerHTML = items.map(sub => {
-    const rows = schema.questions.map(question => {
+    const rows = questionsForSubmission(sub).map(question => {
       const value = BadmintonData.formatAnswer(sub.answers[question.id]);
       return `<tr><th>${BadmintonData.escapeHtml(question.label)}</th><td>${BadmintonData.escapeHtml(value)}</td></tr>`;
     }).join("");
